@@ -194,7 +194,7 @@ model_triplet = Model(inputs=[anchor, positive, negative], outputs=loss)
 print(model_triplet.summary())
 
 opt = optimizers.SGD(learning_rate=0.001, momentum=0.9, nesterov=True)
-model_triplet.compile(loss=identity_loss, optimizer=opt, metrics=['accuracy', 'loss'])
+model_triplet.compile(loss=identity_loss, optimizer=opt)
 
 def scheduler(epoch, lr):
     decay_rate = 1e-6
