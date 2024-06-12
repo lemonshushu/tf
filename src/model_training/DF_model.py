@@ -1,26 +1,16 @@
-# The model is the DF model by Sirinam et al
-
-from keras.models import Model
-from keras.layers import Dense
-from keras.layers import Input
-
-from keras.layers import Activation
-from keras.layers import ELU
-from keras.layers import Conv1D
-from keras.layers import MaxPooling1D
-from keras.layers import Dropout
-from keras.layers.core import Flatten
-
+import tensorflow as tf
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Dense, Input, Activation, Conv1D, MaxPooling1D, Dropout, Flatten, ELU
 
 def DF(input_shape=None, emb_size=None):
     # -----------------Entry flow -----------------
     input_data = Input(shape=input_shape)
 
-    filter_num = ['None', 32, 64, 128, 256]
-    kernel_size = ['None', 8, 8, 8, 8]
-    conv_stride_size = ['None', 1, 1, 1, 1]
-    pool_stride_size = ['None', 4, 4, 4, 4]
-    pool_size = ['None', 8, 8, 8, 8]
+    filter_num = [None, 32, 64, 128, 256]
+    kernel_size = [None, 8, 8, 8, 8]
+    conv_stride_size = [None, 1, 1, 1, 1]
+    pool_stride_size = [None, 4, 4, 4, 4]
+    pool_size = [None, 8, 8, 8, 8]
 
     model = Conv1D(filters=filter_num[1], kernel_size=kernel_size[1],
                    strides=conv_stride_size[1], padding='same', name='block1_conv1')(input_data)
