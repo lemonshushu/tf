@@ -1,31 +1,29 @@
-import cPickle as pickle
+import pickle
 import os
 import random
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
 import numpy as np
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
+import os
+import pickle
 
 def create_test_set_AWF_disjoint(features_model, n_instance, max_n, n_shot, type_exp):
-
     # Load data
     site_dict = {}
-    dataset_dir = '../../dataset/extracted_AWF100/'
+    dataset_dir = '/tf/dataset/preprocessed_split/http2_test/'
     sites = os.listdir(dataset_dir)
-    random.shuffle(sites)
-
+    
     for s in sites:
         site_dict[s] = []
-        site_random = list(range(1, n_instance+1))
-        random.shuffle(site_random)
-        site_random = site_random[:n_instance]
-        for ins in site_random:
-            ins_num = '{:04}'.format(ins)
-            file_name = '%s_%s.pkl' % (s, ins_num)
-            with open(dataset_dir + '/' + s + '/' + file_name, 'rb') as handle:
-                test_set = pickle.load(handle)
-                site_dict[s].append(test_set)
+        site_path = os.path.join(dataset_dir, s)
+        if os.path.isdir(site_path):
+            pkl_files = [f for f in os.listdir(site_path) if f.endswith('.pkl')]
+            for pkl_file in pkl_files:
+                with open(os.path.join(site_path, pkl_file), 'rb') as handle:
+                    test_set = pickle.load(handle)
+                    site_dict[s].append(test_set)
+    
 
     # create_signature and test_set
     signature_dict = {}
@@ -35,7 +33,10 @@ def create_test_set_AWF_disjoint(features_model, n_instance, max_n, n_shot, type
         random.shuffle(data_set)
         signature = []
         for i in range(n_shot):
-            signature.append(data_set.pop(0))
+            try:
+                signature.append(data_set.pop(0))
+            except IndexError:
+                print(f"data_set length: {len(data_set)}")
         signature_dict[s] = signature
         test_dict[s] = data_set[:n_instance - max_n]
 
@@ -45,11 +46,13 @@ def create_test_set_AWF_disjoint(features_model, n_instance, max_n, n_shot, type
         signature_instance = signature_dict[i]
         signature_instance = np.array(signature_instance)
         signature_instance = signature_instance.astype('float32')
-        signature_instance = signature_instance[:, :, np.newaxis]
+        if signature_instance.ndim == 2:
+            signature_instance = signature_instance[:, :, np.newaxis]
         signature_vector = features_model.predict(signature_instance)
         if type_exp == "N-MEV":
             signature_vector = np.array([signature_vector.mean(axis=0)])
         signature_vector_dict[i] = signature_vector
+
 
     # Feed test vector to the model to create embedded test feature's vectors
     test_vector_dict = {}
@@ -57,19 +60,19 @@ def create_test_set_AWF_disjoint(features_model, n_instance, max_n, n_shot, type
         test_instance = test_dict[i]
         test_instance = np.array(test_instance)
         test_instance = test_instance.astype('float32')
-        test_instance = test_instance[:, :, np.newaxis]
+        if test_instance.ndim == 2:
+            test_instance = test_instance[:, :, np.newaxis]
         test_vector = features_model.predict(test_instance)
         test_vector_dict[i] = test_vector
 
     return signature_vector_dict, test_vector_dict
-
 
 def create_test_set_AWF_training_included(features_model, n_instance, max_n, n_shot, type_exp, training_included):
 
     site_dict = {}
     # Load data_training_included
     all_sites = []
-    dataset_dir = '../../dataset/extracted_AWF775_EXP1_TrainingIncluded/'
+    dataset_dir = '/tf/dataset/preprocessed_split/http2/'
     sites_training = os.listdir(dataset_dir)
     random.shuffle(sites_training)
     sites_training = sites_training[:training_included]
@@ -77,18 +80,17 @@ def create_test_set_AWF_training_included(features_model, n_instance, max_n, n_s
     all_sites = all_sites + sites_training
     for s in sites_training:
         site_dict[s] = []
-        site_random = list(range(1, n_instance+1))
-        random.shuffle(site_random)
-        site_random = site_random[:n_instance]
-        for ins in site_random:
-            ins_num = '{:04}'.format(ins)
-            file_name = '%s_%s.pkl' % (s, ins_num)
-            with open(dataset_dir + '/' + s + '/' + file_name, 'rb') as handle:
+        site_path = os.path.join(dataset_dir, s)
+        all_files = [f for f in os.listdir(site_path) if f.endswith('.pkl')]
+        random.shuffle(all_files)
+        selected_files = all_files[:n_instance]
+        for file_name in selected_files:
+            with open(os.path.join(site_path, file_name), 'rb') as handle:
                 test_set = pickle.load(handle)
                 site_dict[s].append(test_set)
 
     # Load data_disjoint
-    dataset_dir = '../../dataset/extracted_AWF100/'
+    dataset_dir = '/tf/dataset/preprocessed_split/http2_test/'
     sites_disjoint = os.listdir(dataset_dir)
     random.shuffle(sites_disjoint)
     sites_disjoint = sites_disjoint[:100-training_included]
@@ -101,8 +103,8 @@ def create_test_set_AWF_training_included(features_model, n_instance, max_n, n_s
         site_random = site_random[:n_instance]
         for ins in site_random:
             ins_num = '{:04}'.format(ins)
-            file_name = '%s_%s.pkl' % (s, ins_num)
-            with open(dataset_dir + '/' + s + '/' + file_name, 'rb') as handle:
+            file_name = f'{s}_{ins_num}.pkl'
+            with open(os.path.join(dataset_dir, s, file_name), 'rb') as handle:
                 test_set = pickle.load(handle)
                 site_dict[s].append(test_set)
 
@@ -117,6 +119,7 @@ def create_test_set_AWF_training_included(features_model, n_instance, max_n, n_s
             signature.append(data_set.pop(0))
         signature_dict[s] = signature
         test_dict[s] = data_set[:n_instance - max_n]
+
     # Feed signature vector to the model to create embedded signature feature's vectors
     signature_vector_dict = {}
     for i in all_sites:
@@ -141,13 +144,12 @@ def create_test_set_AWF_training_included(features_model, n_instance, max_n, n_s
 
     return signature_vector_dict, test_vector_dict
 
-
 def kNN_accuracy(signature_vector_dict, test_vector_dict, size_of_problem, n_shot):
     X_train = []
     y_train = []
 
-    # print "Size of problem :", size_of_problem
-    site_labels = signature_vector_dict.keys()
+    # print("Size of problem :", size_of_problem)
+    site_labels = list(signature_vector_dict.keys())
     random.shuffle(site_labels)
     tested_sites = site_labels[:size_of_problem]
     for s in tested_sites:
@@ -179,7 +181,7 @@ def kNN_accuracy(signature_vector_dict, test_vector_dict, size_of_problem, n_sho
         for p in best_n:
             top_n_list.append(class_mapping[p])
         if class_label in top_n_list:
-            count_correct = count_correct + 1
+            count_correct += 1
 
     acc_knn_top2 = float(count_correct) / float(len(X_test))
     acc_knn_top2 = float("{0:.15f}".format(round(acc_knn_top2, 6)))
@@ -196,7 +198,7 @@ def kNN_accuracy(signature_vector_dict, test_vector_dict, size_of_problem, n_sho
         for p in best_n:
             top_n_list.append(class_mapping[p])
         if class_label in top_n_list:
-            count_correct = count_correct + 1
+            count_correct += 1
 
     acc_knn_top5 = float(count_correct) / float(len(X_test))
     acc_knn_top5 = float("{0:.15f}".format(round(acc_knn_top5, 6)))

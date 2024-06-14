@@ -1,18 +1,19 @@
-from keras.models import load_model
-from utility import create_test_set_AWF_disjoint, kNN_accuracy, create_test_set_AWF_training_included
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-from keras.backend.tensorflow_backend import set_session
 import tensorflow as tf
-config = tf.ConfigProto()
-config.gpu_options.allow_growth = True  # dynamically grow the memory used on the GPU
-config.log_device_placement = False  # to log device placement (on which device the operation ran)
-sess = tf.Session(config=config)
-set_session(sess)  # set this TensorFlow session as the default session for Keras
+from tensorflow.keras.models import load_model
+from utility import create_test_set_AWF_disjoint, kNN_accuracy, create_test_set_AWF_training_included
 
+# Set GPU configuration
+gpus = tf.config.experimental.list_physical_devices('GPU')
+if gpus:
+    try:
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+    except RuntimeError as e:
+        print(e)
 
-
-def AWF_Disjoint_Experment():
+def AWF_Disjoint_Experiment():
     '''
     This function aims to experiment the performance of TF attack
     when the model is trained on the dataset with similar distribution.
@@ -25,7 +26,7 @@ def AWF_Disjoint_Experment():
     # N-MEV is the use of mean of embedded vectors as mentioned in the paper
     SOP_list = [100]
     # SOP_list is the size of problem (how large the closed world is)
-    # You can run gird search for various sizes of problems
+    # You can run grid search for various sizes of problems
     # SOP_list = [100, 75, 50, 25, 10]
     n_shot_list = [5]
     # n_shot_list is the number of n examples (n-shot)
@@ -33,7 +34,7 @@ def AWF_Disjoint_Experment():
     # n_shot_list = [1, 5, 10, 15, 20]
 
     for size_of_problem in SOP_list:
-        print "SOP:", size_of_problem
+        print("SOP:", size_of_problem)
         for n_shot in n_shot_list:
             acc_list_Top1 = []
             acc_list_Top2 = []
@@ -47,13 +48,12 @@ def AWF_Disjoint_Experment():
                 acc_list_Top1.append(float("{0:.15f}".format(round(acc_knn_top1, 5))))
                 acc_list_Top2.append(float("{0:.15f}".format(round(acc_knn_top2, 5))))
                 acc_list_Top5.append(float("{0:.15f}".format(round(acc_knn_top5, 5))))
-            print "N_shot:", n_shot
-            print str(acc_list_Top1).strip('[]')
-            print str(acc_list_Top2).strip('[]')
-            print str(acc_list_Top5).strip('[]')
+            print("N_shot:", n_shot)
+            print(str(acc_list_Top1).strip('[]'))
+            print(str(acc_list_Top2).strip('[]'))
+            print(str(acc_list_Top5).strip('[]'))
 
-
-def AWF_TrainingIncluded_Experment():
+def AWF_TrainingIncluded_Experiment():
     '''
     This function aims to experiment the performance of TF attack
     when the model is trained on the dataset with similar distribution.
@@ -65,22 +65,23 @@ def AWF_TrainingIncluded_Experment():
     type_exp = 'N-MEV'
     # N-MEV is the use of mean of embedded vectors as mentioned in the paper
     training_included_list = [25, 50, 75, 100]
-    # training_included_list is the percentatges of the websites in the test set
-    # will be included in the training set
-    # You can run gird search for various percentages of inclusion
+    # training_included_list is the percentages of the websites in the test set
+    # that will be included in the training set
+    # You can run grid search for various percentages of inclusion
     # training_included_list = [25, 50, 75, 100]
     SOP_list = [100]
     # SOP_list is the size of problem (how large the closed world is)
-    # You can run gird search for various sizes of problems
+    # You can run grid search for various sizes of problems
     # SOP_list = [100, 75, 50, 25, 10]
     n_shot_list = [5]
     # n_shot_list is the number of n examples (n-shot)
     # You can run grid search for various sizes of n-shot
     # n_shot_list = [1, 5, 10, 15, 20]
+
     for training_included in training_included_list:
-        print "Training included:", training_included
+        print("Training included:", training_included)
         for size_of_problem in SOP_list:
-            print "SOP:", size_of_problem
+            print("SOP:", size_of_problem)
             for n_shot in n_shot_list:
                 acc_list_Top1 = []
                 acc_list_Top2 = []
@@ -95,11 +96,10 @@ def AWF_TrainingIncluded_Experment():
                     acc_list_Top1.append(float("{0:.15f}".format(round(acc_knn_top1, 5))))
                     acc_list_Top2.append(float("{0:.15f}".format(round(acc_knn_top2, 5))))
                     acc_list_Top5.append(float("{0:.15f}".format(round(acc_knn_top5, 5))))
-                print "N_shot:", n_shot
+                print("N_shot:", n_shot)
+                print(str(acc_list_Top1).strip('[]'))
+                print(str(acc_list_Top2).strip('[]'))
+                print(str(acc_list_Top5).strip('[]'))
 
-                print str(acc_list_Top1).strip('[]')
-                print str(acc_list_Top2).strip('[]')
-                print str(acc_list_Top5).strip('[]')
-
-
-AWF_Disjoint_Experment()
+AWF_Disjoint_Experiment()
+AWF_TrainingIncluded_Experiment()
